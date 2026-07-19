@@ -66,6 +66,20 @@ jobs:
               renpy-8.3.4-sdk/rapt/buildlib/rapt/build.py
           fi
 
+      - name: Patch SDLActivity.java (fix safe keyboard input)
+        run: |
+          FOUND=$(find renpy-8.3.4-sdk/rapt -name "SDLActivity.java" -type f)
+          if [ -z "$FOUND" ]; then
+            echo "ERROR: SDLActivity.java not found!"
+            exit 1
+          fi
+          for SDL_FILE in $FOUND; do
+            echo "Patching: $SDL_FILE"
+            sed -i 's/TYPE_TEXT_VARIATION_VISIBLE_PASSWORD/TYPE_TEXT_VARIATION_NORMAL/' "$SDL_FILE"
+            sed -i '/outAttrs\.imeOptions = EditorInfo\.IME_FLAG_NO_EXTRACT_UI/{N;s/| EditorInfo\.IME_FLAG_NO_FULLSCREEN[^;]*;/| EditorInfo.IME_FLAG_NO_FULLSCREEN | EditorInfo.IME_ACTION_DONE;/}' "$SDL_FILE"
+            grep -n "inputType\|imeOptions" "$SDL_FILE"
+          done
+
       - name: Set version from tag
         run: |
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then

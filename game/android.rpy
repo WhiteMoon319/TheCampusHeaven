@@ -9,3 +9,5 @@ init python:
     build.android_permissions = []
 
     build.include_old_game = False
+
+    build.orientation = "landscape"
