@@ -1,0 +1,190 @@
+name: Release APK Build
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-35 build-tools;35.0.0"
+
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-renpy-8.3.4
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Cache Ren'Py SDK + Rapt
+        id: cache-renpy
+        uses: actions/cache@v4
+        with:
+          path: renpy-8.3.4-sdk
+          key: renpy-8.3.4-${{ runner.os }}-v5
+
+      - name: Download Ren'Py SDK
+        if: steps.cache-renpy.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://www.renpy.org/dl/8.3.4/renpy-8.3.4-sdk.tar.bz2"
+          tar -xjf renpy-8.3.4-sdk.tar.bz2
+
+      - name: Download and Extract Rapt
+        if: steps.cache-renpy.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://www.renpy.org/dl/8.3.4/renpy-8.3.4-rapt.zip"
+          unzip -q renpy-8.3.4-rapt.zip -d renpy-8.3.4-sdk
+
+      - name: Patch rapt build.py (skip time.time() version code)
+        run: |
+          if ! grep -q 'if config.numeric_version <= 1:' renpy-8.3.4-sdk/rapt/buildlib/rapt/build.py; then
+            sed -i 's/config.numeric_version = max(int(time.time()), int(config.numeric_version))/if config.numeric_version <= 1: &/' \
+              renpy-8.3.4-sdk/rapt/buildlib/rapt/build.py
+          fi
+
+      - name: Set version from tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+          else
+            VERSION="1.0.0"
+          fi
+          VERSION_CODE=$(git rev-list --count HEAD)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "Building version $VERSION (code $VERSION_CODE)"
+
+      - name: Compile game scripts
+        working-directory: renpy-8.3.4-sdk
+        run: |
+          lib/py3-linux-x86_64/python renpy.py ${{ github.workspace }} compile
+
+      - name: Prepare build directory
+        working-directory: renpy-8.3.4-sdk
+        run: |
+          rm -rf build_dir
+          mkdir -p build_dir
+          cp -r renpy build_dir/
+          cp -r lib build_dir/
+          cp -r ${{ github.workspace }}/game build_dir/
+          cp renpy.py build_dir/ 2>/dev/null || true
+          rm -rf build_dir/private build_dir/assets 2>/dev/null || true
+
+      - name: Generate keystore
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > ${{ github.workspace }}/android.keystore
+          else
+            keytool -genkey -v -keystore ${{ github.workspace }}/android.keystore \
+              -alias release -keyalg RSA -keysize 2048 -validity 36500 \
+              -storepass Zhang0319. -keypass Zhang0319. \
+              -dname "CN=TheCampusHeaven, OU=WhiteMoon, O=WhiteMoon, L=BJ, ST=BJ, C=CN"
+          fi
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Build Release APK
+        working-directory: renpy-8.3.4-sdk/rapt
+        run: |
+          export ANDROID_HOME=$ANDROID_SDK_ROOT
+          export SDL_VIDEODRIVER=dummy
+          export SDL_AUDIODRIVER=dummy
+          export JAVA_TOOL_OPTIONS="-Xmx5g"
+          printf "TheCampusHeaven\n\ncom.WhiteMoon319.TheCampusHeaven\n5\n${VERSION}\n${VERSION_CODE}\n\n\n\n\nrelease\nZhang0319.\nZhang0319.\n\n" > /tmp/answers.txt
+          ../lib/py3-linux-x86_64/python -c "
+          import sys, os, json; sys.path.insert(0,'buildlib'); sys.path.insert(0,'..')
+          import rapt.interface
+          rapt.interface.Style = type('Style', (), {'BRIGHT': ''})
+          import rapt.build, rapt.configure
+          iface = rapt.interface.Interface()
+          rapt.build.copy_project()
+          sdk_root = os.path.abspath(os.path.join(os.getcwd(), '..'))
+          build_dir = os.path.join(sdk_root, 'build_dir')
+          rapt.configure.configure(iface, directory=build_dir)
+          ks_path = '${{ github.workspace }}/android.keystore'
+          ks_pass = '${{ secrets.KEYSTORE_PASSWORD || 'Zhang0319.' }}'
+          ks_alias = '${{ secrets.KEY_ALIAS || 'release' }}'
+          key_pass = '${{ secrets.KEY_PASSWORD || 'Zhang0319.' }}'
+          # Prevent rapt from overwriting signing config with hardcoded android/android
+          with open(os.path.join(build_dir, 'android.json'), 'r+') as f:
+              config = json.load(f); config['update_keystores'] = False
+              config['numeric_version'] = ${VERSION_CODE}
+              config['version'] = '${VERSION}'
+              f.seek(0); f.truncate(); json.dump(config, f)
+          with open('project/local.properties', 'w') as f:
+              f.write(f'key.store={ks_path}\n')
+              f.write(f'key.alias={ks_alias}\n')
+              f.write(f'key.store.password={ks_pass}\n')
+              f.write(f'key.alias.password={key_pass}\n')
+          rapt.build.build(iface, directory=build_dir, base='${{ github.workspace }}')
+          " < /tmp/answers.txt
+
+      - name: Find APK
+        id: apk
+        run: |
+          APK_PATH=$(find "renpy-8.3.4-sdk/rapt" -name "*.apk" -type f | head -1)
+          APK_NAME="TheCampusHeaven-${VERSION}.apk"
+          cp "$APK_PATH" "$APK_NAME"
+          rm -f app-release.apk app-debug.apk 2>/dev/null || true
+          echo "path=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "name=$APK_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+
+      - name: Install git-cliff
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: kenji-miyake/setup-git-cliff@v2
+
+      - name: Generate Changelog
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          git-cliff --current --strip header -o CHANGELOG.md || true
+          if [ ! -s CHANGELOG.md ]; then
+            echo "## 更新内容" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            PREV_TAG=$(git tag --sort=-creatordate | grep -A1 "^${{ github.ref_name }}$" | tail -1)
+            if [ -z "$PREV_TAG" ]; then
+              git log --pretty=format:"- %s" --reverse >> CHANGELOG.md
+            else
+              git log "${PREV_TAG}..${{ github.ref_name }}" --pretty=format:"- %s" --reverse >> CHANGELOG.md
+            fi
+          fi
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.apk.outputs.path }}
+          body_path: CHANGELOG.md
+          name: "v${{ env.VERSION }}"
+          tag_name: ${{ github.ref_name }}
