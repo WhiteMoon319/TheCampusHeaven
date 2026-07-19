@@ -132,6 +132,13 @@ jobs:
               f.write('key.alias=android\n')
               f.write('key.store.password=android\n')
               f.write('key.alias.password=android\n')
+          # Force landscape orientation in all AndroidManifest.xml
+          import glob as _glob
+          for _mf in _glob.glob(os.path.join(build_dir, '**', 'AndroidManifest.xml'), recursive=True):
+              with open(_mf, 'r') as _f: _txt = _f.read()
+              if 'screenOrientation' not in _txt:
+                  _txt = _txt.replace('<activity ', '<activity android:screenOrientation="landscape" ')
+              with open(_mf, 'w') as _f: _f.write(_txt)
           rapt.build.build(iface, directory=build_dir, base='${{ github.workspace }}')
           " < /tmp/answers.txt
 
