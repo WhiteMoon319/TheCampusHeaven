@@ -23,11 +23,12 @@ def main():
     p.add_argument("--orientation", default="landscape")
     args = p.parse_args()
 
-    rapt_dir = os.path.join(args.sdk_dir, "rapt")
-    build_dir = os.path.join(args.sdk_dir, "build_dir")
+    sdk_dir = os.path.abspath(args.sdk_dir)
+    rapt_dir = os.path.join(sdk_dir, "rapt")
+    build_dir = os.path.join(sdk_dir, "build_dir")
 
     sys.path.insert(0, os.path.join(rapt_dir, "buildlib"))
-    sys.path.insert(0, args.sdk_dir)
+    sys.path.insert(0, sdk_dir)
 
     import rapt.interface
 
@@ -46,13 +47,14 @@ def main():
         "",
         args.package,
         "5",
-        args.version,
-        str(args.version_code),
-        "", "", "", "", "",
+        "1",
+        "4",
+        "1",
         args.ks_alias,
         args.ks_pass,
         args.key_pass,
-        "", "",
+        "",
+        "",
     ])
     sys.stdin = io.StringIO(answers)
 
