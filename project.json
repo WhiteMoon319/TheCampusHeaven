@@ -2,7 +2,6 @@
   "build_update": false,
   "packages": [
     "pc",
-    "mac",
     "android"
   ],
   "add_from": true,
