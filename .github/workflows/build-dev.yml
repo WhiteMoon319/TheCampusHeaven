@@ -5,6 +5,10 @@ on:
     branches: [dev]
   workflow_dispatch:
 
+concurrency:
+  group: dev-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-dev:
     runs-on: ubuntu-latest
@@ -14,69 +18,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup JDK 21
-        uses: actions/setup-java@v4
+      - name: Setup RenPy Android Build Environment
+        id: setup
+        uses: ./.github/actions/setup-renpy-android
         with:
-          java-version: "21"
-          distribution: "temurin"
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: "platforms;android-35 build-tools;35.0.0"
-
-      - name: Accept Android SDK Licenses
-        run: |
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-renpy-8.3.4
-          restore-keys: gradle-${{ runner.os }}-
-
-      - name: Cache Ren'Py SDK + Rapt
-        id: cache-renpy
-        uses: actions/cache@v4
-        with:
-          path: renpy-8.3.4-sdk
-          key: renpy-8.3.4-${{ runner.os }}-v4
-
-      - name: Download Ren'Py SDK
-        if: steps.cache-renpy.outputs.cache-hit != 'true'
-        run: |
-          wget -q "https://www.renpy.org/dl/8.3.4/renpy-8.3.4-sdk.tar.bz2"
-          tar -xjf renpy-8.3.4-sdk.tar.bz2
-
-      - name: Download and Extract Rapt
-        if: steps.cache-renpy.outputs.cache-hit != 'true'
-        run: |
-          wget -q "https://www.renpy.org/dl/8.3.4/renpy-8.3.4-rapt.zip"
-          unzip -q renpy-8.3.4-rapt.zip -d renpy-8.3.4-sdk
-
-      - name: Patch rapt build.py (skip time.time() version code)
-        run: |
-          if ! grep -q 'if config.numeric_version <= 1:' renpy-8.3.4-sdk/rapt/buildlib/rapt/build.py; then
-            sed -i 's/config.numeric_version = max(int(time.time()), int(config.numeric_version))/if config.numeric_version <= 1: &/' \
-              renpy-8.3.4-sdk/rapt/buildlib/rapt/build.py
-          fi
-
-      - name: Patch SDLActivity.java (fix safe keyboard input)
-        run: |
-          FOUND=$(find renpy-8.3.4-sdk/rapt -name "SDLActivity.java" -type f)
-          if [ -z "$FOUND" ]; then
-            echo "ERROR: SDLActivity.java not found!"
-            exit 1
-          fi
-          for SDL_FILE in $FOUND; do
-            echo "Patching: $SDL_FILE"
-            sed -i 's/TYPE_TEXT_VARIATION_VISIBLE_PASSWORD/TYPE_TEXT_VARIATION_NORMAL/' "$SDL_FILE"
-            sed -i '/outAttrs\.imeOptions = EditorInfo\.IME_FLAG_NO_EXTRACT_UI/{N;s/| EditorInfo\.IME_FLAG_NO_FULLSCREEN[^;]*;/| EditorInfo.IME_FLAG_NO_FULLSCREEN | EditorInfo.IME_ACTION_DONE;/}' "$SDL_FILE"
-            grep -n "inputType\|imeOptions" "$SDL_FILE"
-          done
+          renpy-version: "8.3.4"
+          cache-suffix: "v1"
 
       - name: Set dev version
         run: |
@@ -86,12 +33,12 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Compile game scripts
-        working-directory: renpy-8.3.4-sdk
+        working-directory: ${{ steps.setup.outputs.sdk-dir }}
         run: |
           lib/py3-linux-x86_64/python renpy.py ${{ github.workspace }} compile
 
       - name: Prepare build directory
-        working-directory: renpy-8.3.4-sdk
+        working-directory: ${{ steps.setup.outputs.sdk-dir }}
         run: |
           rm -rf build_dir
           mkdir -p build_dir
@@ -109,50 +56,25 @@ jobs:
             -dname "CN=Android Debug, OU=Android, O=Unknown, L=Unknown, S=Unknown, C=US"
 
       - name: Build Debug APK
-        working-directory: renpy-8.3.4-sdk/rapt
         run: |
           export ANDROID_HOME=$ANDROID_SDK_ROOT
           export SDL_VIDEODRIVER=dummy
-          export VERSION=$(git describe --tags --always | sed 's/^v//')
-          export VERSION_CODE=$(git rev-list --count HEAD)
+          export SDL_AUDIODRIVER=dummy
           export JAVA_TOOL_OPTIONS="-Xmx5g"
-          printf 'TheCampusHeaven\n\ncom.WhiteMoon319.TheCampusHeaven\n5\n1.0\n1\n\n\n\n\nandroid\nandroid\nandroid\n\n' > /tmp/answers.txt
-          ../lib/py3-linux-x86_64/python -c "
-          import sys, os, json; sys.path.insert(0,'buildlib'); sys.path.insert(0,'..')
-          import rapt.interface
-          rapt.interface.Style = type('Style', (), {'BRIGHT': ''})
-          import rapt.build, rapt.configure
-          iface = rapt.interface.Interface()
-          rapt.build.copy_project()
-          sdk_root = os.path.abspath(os.path.join(os.getcwd(), '..'))
-          build_dir = os.path.join(sdk_root, 'build_dir')
-          rapt.configure.configure(iface, directory=build_dir)
-          # Prevent rapt from overwriting signing config with hardcoded android/android
-          with open(os.path.join(build_dir, 'android.json'), 'r+') as f:
-              config = json.load(f); config['update_keystores'] = False
-              config['numeric_version'] = ${VERSION_CODE}
-              config['version'] = '${VERSION}'
-              f.seek(0); f.truncate(); json.dump(config, f)
-          ks_path = '${{ github.workspace }}/android.keystore'
-          with open('project/local.properties', 'w') as f:
-              f.write(f'key.store={ks_path}\n')
-              f.write('key.alias=android\n')
-              f.write('key.store.password=android\n')
-              f.write('key.alias.password=android\n')
-          # Force landscape orientation in all AndroidManifest.xml
-          import glob as _glob
-          for _mf in _glob.glob(os.path.join(build_dir, '**', 'AndroidManifest.xml'), recursive=True):
-              with open(_mf, 'r') as _f: _txt = _f.read()
-              if 'screenOrientation' not in _txt:
-                  _txt = _txt.replace('<activity ', '<activity android:screenOrientation="landscape" ')
-              with open(_mf, 'w') as _f: _f.write(_txt)
-          rapt.build.build(iface, directory=build_dir, base='${{ github.workspace }}')
-          " < /tmp/answers.txt
+          ${{ steps.setup.outputs.sdk-dir }}/lib/py3-linux-x86_64/python scripts/build_apk.py \
+            --workspace "${{ github.workspace }}" \
+            --sdk-dir "${{ steps.setup.outputs.sdk-dir }}" \
+            --version "$VERSION" \
+            --version-code "$(git rev-list --count HEAD)" \
+            --ks-path "${{ github.workspace }}/android.keystore" \
+            --ks-pass android \
+            --ks-alias android \
+            --key-pass android
 
       - name: Find APK
         id: apk
         run: |
-          APK_PATH=$(find "renpy-8.3.4-sdk/rapt" -name "*.apk" -type f | head -1)
+          APK_PATH=$(find "${{ steps.setup.outputs.sdk-dir }}/rapt" -name "*.apk" -type f | head -1)
           cp "$APK_PATH" "app-debug.apk"
           echo "path=app-debug.apk" >> $GITHUB_OUTPUT
           echo "name=app-debug.apk" >> $GITHUB_OUTPUT
