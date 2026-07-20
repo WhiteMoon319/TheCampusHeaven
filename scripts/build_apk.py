@@ -1,4 +1,5 @@
 """Build TheCampusHeaven APK using Ren'Py Rapt."""
+import io
 import sys
 import os
 import json
@@ -17,6 +18,8 @@ def main():
     p.add_argument("--ks-pass", required=True, help="Keystore password")
     p.add_argument("--ks-alias", required=True, help="Keystore alias")
     p.add_argument("--key-pass", required=True, help="Key password")
+    p.add_argument("--name", default="TheCampusHeaven", help="App display name")
+    p.add_argument("--package", default="com.WhiteMoon319.TheCampusHeaven", help="App package name")
     p.add_argument("--orientation", default="landscape")
     args = p.parse_args()
 
@@ -37,6 +40,22 @@ def main():
     os.chdir(rapt_dir)
 
     rapt.build.copy_project()
+
+    answers = "\n".join([
+        args.name,
+        "",
+        args.package,
+        "5",
+        args.version,
+        str(args.version_code),
+        "", "", "", "", "",
+        args.ks_alias,
+        args.ks_pass,
+        args.key_pass,
+        "", "",
+    ])
+    sys.stdin = io.StringIO(answers)
+
     rapt.configure.configure(iface, directory=build_dir)
 
     android_json = os.path.join(build_dir, "android.json")
