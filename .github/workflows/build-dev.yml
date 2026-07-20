@@ -78,6 +78,13 @@ jobs:
             grep -n "inputType\|imeOptions" "$SDL_FILE"
           done
 
+      - name: Set dev version
+        run: |
+          VERSION=$(git describe --tags --always | sed 's/^v//')
+          sed -i "s/define config.version = .*/define config.version = \"${VERSION}\"/" game/options.rpy
+          grep "config.version" game/options.rpy
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Compile game scripts
         working-directory: renpy-8.3.4-sdk
         run: |

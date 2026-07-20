@@ -28,3 +28,5 @@
 # Keystore files.
 *.keystore
 *.jks
+#本地构建配置
+android.json

@@ -93,6 +93,11 @@ jobs:
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "Building version $VERSION (code $VERSION_CODE)"
 
+      - name: Inject version into game
+        run: |
+          sed -i "s/define config.version = .*/define config.version = \"${VERSION}\"/" game/options.rpy
+          grep "config.version" game/options.rpy
+
       - name: Compile game scripts
         working-directory: renpy-8.3.4-sdk
         run: |
