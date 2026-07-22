@@ -33,3 +33,6 @@
 
 #本地构建配置
 android.json
+# 剧本转换脚本于相关文件
+excel_to_rpy.py
+*.xlsx

@@ -42,8 +42,8 @@ jobs:
 
       - name: Inject version into game
         run: |
-          sed -i "s/define config.version = .*/define config.version = \"${VERSION}\"/" game/options.rpy
-          grep "config.version" game/options.rpy
+          sed -i "s/define config.version = .*/define config.version = \"${VERSION}\"/" game/system/options.rpy
+          grep "config.version" game/system/options.rpy
 
       - name: Compile game scripts
         working-directory: ${{ steps.setup.outputs.sdk-dir }}
