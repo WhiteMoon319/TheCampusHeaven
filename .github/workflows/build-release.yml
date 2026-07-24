@@ -58,6 +58,7 @@ jobs:
           cp -r renpy build_dir/
           cp -r lib build_dir/
           cp -r ${{ github.workspace }}/game build_dir/
+          cp ${{ github.workspace }}/android-* build_dir/ 2>/dev/null || true
           cp renpy.py build_dir/ 2>/dev/null || true
           rm -rf build_dir/private build_dir/assets 2>/dev/null || true
 
