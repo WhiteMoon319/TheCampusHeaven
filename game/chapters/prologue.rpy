@@ -5,6 +5,7 @@
 label start:
     $ preferences.text_cps = 40
     stop music fadeout 1.0
+    play music 'audio/main_bgm.ogg'
     scene bg toilet with fade
     show student_block at center
     show student_block as student_block at right

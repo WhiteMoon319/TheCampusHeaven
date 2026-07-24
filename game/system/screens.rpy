@@ -1505,7 +1505,6 @@ screen quick_menu():
             style "quick_menu"
             style_prefix "quick"
 
-            textbutton _("回退") action Rollback()
             textbutton _("快进") action Skip() alternate Skip(fast=True, confirm=True)
             textbutton _("自动") action Preference("auto-forward", "toggle")
             textbutton _("菜单") action ShowMenu()
