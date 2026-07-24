@@ -40,6 +40,33 @@ def main():
 
     os.chdir(rapt_dir)
 
+    anydpi_dir = os.path.join(
+        "prototype", "app", "src", "main", "res", "mipmap-anydpi-v26"
+    )
+    os.makedirs(anydpi_dir, exist_ok=True)
+
+    adaptive_icon_xml = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+        '    <background android:drawable="@mipmap/icon_background"/>\n'
+        '    <foreground android:drawable="@mipmap/icon_foreground"/>\n'
+        '</adaptive-icon>\n'
+    )
+
+    for xml_name in ("icon.xml", "icon_round.xml"):
+        with open(os.path.join(anydpi_dir, xml_name), "w", encoding="utf-8") as f:
+            f.write(adaptive_icon_xml)
+
+    manifest_template = os.path.join("templates", "app-AndroidManifest.xml")
+    with open(manifest_template, "r", encoding="utf-8") as f:
+        content = f.read()
+    content = content.replace(
+        'android:icon="@mipmap/icon"',
+        'android:icon="@mipmap/icon"\n      android:roundIcon="@mipmap/icon_round"',
+    )
+    with open(manifest_template, "w", encoding="utf-8") as f:
+        f.write(content)
+
     rapt.build.copy_project()
 
     answers = "\n".join([
@@ -89,6 +116,25 @@ def main():
             )
         with open(mf, "w") as f:
             f.write(txt)
+
+    import shutil as _shutil
+
+    workspace = os.path.abspath(args.workspace)
+    for fn in os.listdir(workspace):
+        if fn.startswith("android-"):
+            src = os.path.join(workspace, fn)
+            dst = os.path.join(build_dir, fn)
+            if os.path.isfile(src) and not os.path.exists(dst):
+                _shutil.copy2(src, dst)
+
+    game_dir = os.path.join(build_dir, "game")
+    if os.path.isdir(game_dir):
+        for fn in os.listdir(game_dir):
+            if fn.startswith("android-"):
+                src = os.path.join(game_dir, fn)
+                dst = os.path.join(build_dir, fn)
+                if not os.path.exists(dst):
+                    _shutil.copy2(src, dst)
 
     rapt.build.build(iface, directory=build_dir, base=args.workspace)
 
