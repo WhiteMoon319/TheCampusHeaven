@@ -53,19 +53,8 @@ def main():
         '</adaptive-icon>\n'
     )
 
-    for xml_name in ("icon.xml", "icon_round.xml"):
-        with open(os.path.join(anydpi_dir, xml_name), "w", encoding="utf-8") as f:
-            f.write(adaptive_icon_xml)
-
-    manifest_template = os.path.join("templates", "app-AndroidManifest.xml")
-    with open(manifest_template, "r", encoding="utf-8") as f:
-        content = f.read()
-    content = content.replace(
-        'android:icon="@mipmap/icon"',
-        'android:icon="@mipmap/icon"\n      android:roundIcon="@mipmap/icon_round"',
-    )
-    with open(manifest_template, "w", encoding="utf-8") as f:
-        f.write(content)
+    with open(os.path.join(anydpi_dir, "icon.xml"), "w", encoding="utf-8") as f:
+        f.write(adaptive_icon_xml)
 
     rapt.build.copy_project()
 
