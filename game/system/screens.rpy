@@ -239,7 +239,6 @@ screen quick_menu():
             style_prefix "quick"
             style "quick_menu"
 
-            textbutton _("回退") action Rollback()
             textbutton _("历史") action ShowMenu('history')
             textbutton _("快进") action Skip() alternate Skip(fast=True, confirm=True)
             textbutton _("自动") action Preference("auto-forward", "toggle")

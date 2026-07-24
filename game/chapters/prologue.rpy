@@ -20,7 +20,6 @@ label start:
     "那几个高年级学生站起来互相对视了一眼"
     student_b "小兔崽子，别让我逮到你。"
     hide student_block
-    hide student_b
     narrator "为首的那个，带着其他两个人离开了厕所。"
     show boy_block at center with move
     "你看见那个小男孩朝你走来，蹲下身，向你伸出手。"
@@ -30,4 +29,4 @@ label start:
     centered "从此，\n你认识了这个叫庄桂清的人，\n但你们的交集，\n却好像只局限在了这一次见面。\n而你...\n甚至没能告诉他你的名字..."
     window auto
     $ player_name = renpy.input("所以...你叫？").strip()
-    jump stage_1_intro
+    jump before_konw

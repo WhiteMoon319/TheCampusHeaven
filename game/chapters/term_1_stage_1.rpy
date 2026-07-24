@@ -2,7 +2,7 @@
 # 源文件: term_1_stage_1.xlsx
 
 
-label stage_1_intro:
+label before_konw:
     window hide
     centered "一年后的中考，\n你超常发挥，拿下了736的高分，\n顺利进入了离你家很近的重庆八中渝北校区。\n虽然你的身高还是定格在了143cm，\n但至少八中没有人会欺负你。"
     window auto
@@ -21,37 +21,62 @@ label stage_1_intro:
     "在他和陈叙塬冷战的时候..."
     menu:
         "上前和他打招呼":
-            jump zhuang_chen_route
+            jump t1_1
         "继续守望":
-            jump bad_end
+            jump bad_end_1
         "埋头学习（陆明远线 暂未开放）":
             jump lu_mingyuan_route
 
-label zhuang_chen_route:
+label t1_1:
     scene bg classroom with dissolve
     show player_block at left
     show zhuang_block at right with dissolve
-    narrator "你深吸一口气，终于鼓起勇气走向了庄桂清。"
-    "[player_name]"
-    "庄...庄桂清？"
-    zhuang "嗯？你是...？"
-    "[player_name]"
-    "你不记得我了吗...初二那年，在厕所里..."
-    zhuang "是你！你后来去哪了？我一直想知道你的名字。"
-    "[player_name]"
-    "我叫[player_name]。"
-    zhuang "[player_name]...好名字。"
-    zhuang "好久不见。"
-    narrator "他的笑容，和你记忆中一模一样。"
-    narrator "而你等了这么久，终于等到了这一刻。"
-    scene black
-    window hide
-    centered "{size=+20}——庄桂清/陈叙塬线 开启——{/size}"
+    "你暗自下定决心，在心中为自己鼓气，迈出了第一步。"
+    "你走到了庄桂清面前。"
+    zhuang "[player_name]，你...你找我有什么事吗？"
+    player_name "庄桂清？你...这是在？"
+    "庄桂清猛地合上日记本，他抬头看向你。"
+    zhuang "没...没什么。"
+    menu:
+        "没事，就是看见你在写东西，有点好奇。":
+            jump t1_1_a
+        "就是听说最近你和陈叙塬闹矛盾了？":
+            jump t1_1_b
+        "老徐让我来帮你补补功课。":
+            jump t1_1_c
+label t1_1_a:
+    $ love_zhuang += 1
+    player_name "没事，就是看见你在写东西，有点好奇。"
+    player_name "就是想来问问。"
+    zhuang "没啥的，随便写写。"
+    zhuang "嗯...对。"
+    player_name "哦哦，那有啥我能帮你的？"
+    zhuang "嗯..."
+    zhuang "这个生物题可以吗？"
+    jump t1_2
+label t1_1_b:
+    player_name "就是听说你和陈叙塬闹矛盾了？"
+    player_name "你们怎么回事啊？不是玩得那么好？"
+    zhuang "..."
+    zhuang "没啥，一点小矛盾。"
+    player_name "那有什么我能帮你的？"
+    zhuang "嗯..."
+    zhuang "这个生物题可以吗？"
+    jump t1_2
+label t1_1_c:
+    $ trust_zhuang += 2
+    player_name "老徐让我帮你补补功课。"
+    player_name "那你有哪不大会？"
+    zhuang "老徐啊...谢谢你，也麻烦他了。"
+    zhuang "嗯...生物的遗传题可以吗？"
+    "生物吗？当然可以呀。"
+    jump t1_2
+label t1_2:
     window auto
     narrator "To be continued..."
     return
 
-label bad_end:
+label bad_end_1:
     scene bg school with dissolve
     show player_block at left
     narrator "你再一次低下了头，装作什么都没看见。"

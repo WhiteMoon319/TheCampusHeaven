@@ -510,7 +510,7 @@ def parse_rpy(filepath: str) -> list:
                 m = re.match(r"(.+?)\s+with\s+(.+)", rest)
                 if m:
                     img = m.group(1).strip()
-                    effect = "with " + m.group(2).strip()
+                    effect = m.group(2).strip()
                 else:
                     img = rest
                 result.append({
@@ -536,7 +536,13 @@ def parse_rpy(filepath: str) -> list:
                 img = " ".join(img_parts)
 
                 remaining = parts[i:]
-                effect = " ".join(remaining) if remaining else ""
+                effect_parts = []
+                skip_next = False
+                for p in remaining:
+                    if p in ("as", "at", "with"):
+                        continue
+                    effect_parts.append(p)
+                effect = " ".join(effect_parts)
 
                 result.append({
                     "_type": "show",
@@ -553,7 +559,7 @@ def parse_rpy(filepath: str) -> list:
                 m = re.match(r"(\S+)\s+(.+)", rest)
                 if m:
                     rest = m.group(1)
-                    effect = m.group(2)
+                    effect = re.sub(r"\bwith\s+", "", m.group(2)).strip()
                 result.append({
                     "_type": "hide",
                     "指令类型": "hide（隐藏角色）",
@@ -810,13 +816,8 @@ def _setup_sheet_header(ws, dropdowns=None):
         ws.column_dimensions[get_column_letter(col_idx)].width = width
     ws.row_dimensions[1].height = 24
 
-    # 指令类型下拉
-    cmd_formula = '"' + ",".join(COMMAND_TYPES) + '"'
-    dv = DataValidation(type="list", formula1=cmd_formula, allow_blank=True)
-    dv.error = "请从下拉列表选择指令类型"
-    dv.errorTitle = "无效指令"
-    dv.add("B2:B10000")
-    ws.add_data_validation(dv)
+    # 指令类型下拉（列表较长时自动使用隐藏辅助 Sheet）
+    _add_dropdown_validation(ws, "B", COMMAND_TYPES)
 
     # 逻辑连接下拉（F 列）
     dv_connect = DataValidation(type="list", formula1='"and,or"', allow_blank=True)
@@ -908,7 +909,8 @@ def write_excel(rows: list, output_path: str, split_sheets: bool = True):
 
     wb.save(output_path)
     print(f"Excel saved: {output_path}")
-    print(f"   {sum(1 for r in rows if r.get('_type') != 'blank')} rows / {len(wb.worksheets)} sheet(s)")
+    visible_sheets = sum(1 for ws in wb.worksheets if ws.sheet_state == "visible")
+    print(f"   {sum(1 for r in rows if r.get('_type') != 'blank')} rows / {visible_sheets} sheet(s)")
 
 
 def _strip_quotes(s: str) -> str:
