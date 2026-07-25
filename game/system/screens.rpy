@@ -289,37 +289,39 @@ screen navigation():
 
         if main_menu:
 
-            textbutton _("开始游戏") action Start()
+            textbutton _("开始游戏") action Start() xoffset 0
 
         else:
 
-            textbutton _("历史") action ShowMenu("history")
+            textbutton _("历史") action ShowMenu("history") xoffset 0
 
-            textbutton _("保存") action ShowMenu("save")
+            textbutton _("保存") action ShowMenu("save") xoffset 60
 
-        textbutton _("读取游戏") action ShowMenu("load")
+        textbutton _("读取游戏") action ShowMenu("load") xoffset 80
 
-        textbutton _("设置") action ShowMenu("preferences")
+        textbutton _("设置") action ShowMenu("preferences") xoffset 0
 
         if _in_replay:
 
-            textbutton _("结束回放") action EndReplay(confirm=True)
+            textbutton _("结束回放") action EndReplay(confirm=True) xoffset 0
 
         elif not main_menu:
 
-            textbutton _("标题菜单") action MainMenu()
+            textbutton _("标题菜单") action MainMenu() xoffset 0
 
-        textbutton _("关于") action ShowMenu("about")
+        textbutton _("关于") action ShowMenu("about") xoffset 100
+
+        textbutton _("CG画廊") action ShowMenu("cg_gallery") xoffset 50
 
         if renpy.variant("pc") or (renpy.variant("web") and not renpy.variant("mobile")):
 
             ## “帮助”对移动设备来说并非必需或相关。
-            textbutton _("帮助") action ShowMenu("help")
+            textbutton _("帮助") action ShowMenu("help") xoffset 70
 
         if renpy.variant("pc"):
 
             ## 退出按钮在 iOS 上是被禁止使用的，在安卓和网页上也不是必要的。
-            textbutton _("退出") action Quit(confirm=not main_menu)
+            textbutton _("退出") action Quit(confirm=not main_menu) xoffset 0
 
 
 style navigation_button is gui_button
@@ -358,12 +360,8 @@ screen main_menu():
         vbox:
             style "main_menu_vbox"
 
-            text "[config.name!t]":
-                style "main_menu_title"
-
             text "[config.version]":
                 style "main_menu_version"
-
 
 style main_menu_frame is empty
 style main_menu_vbox is vbox

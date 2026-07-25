@@ -56,16 +56,16 @@ define gui.interface_text_color = '#404040'
 ## 字体和字体大小 #####################################################################
 
 ## 游戏内文本使用的字体。
-define gui.text_font = "fonts/MiSans-Regular.ttf"
+define gui.text_font = "fonts/dialogue.ttf"
 
 ## 角色名称使用的字体。
-define gui.name_text_font = "fonts/MiSans-Semibold.ttf"
+define gui.name_text_font = "fonts/name.ttf"
 
 ## 游戏外文本使用的字体。
-define gui.interface_text_font = "fonts/MiSans-Regular.ttf"
+define gui.interface_text_font = "fonts/interface.ttf"
 
 ## 普通对话文本的大小。
-define gui.text_size = 33
+define gui.text_size = 38
 
 ## 角色名称的大小。
 define gui.name_text_size = 45
@@ -131,6 +131,8 @@ define gui.dialogue_width = 1116
 ## 对话文本的水平对齐方式。0.0 为左侧对齐，0.5 为居中显示，而 1.0 为右侧对齐。
 define gui.dialogue_text_xalign = 0.0
 
+define gui.dialogue_text_color = "#000000"
+
 
 ## 按钮 ##########################################################################
 ##
@@ -185,6 +187,8 @@ define gui.quick_button_text_selected_color = gui.accent_color
 ## 释来设置导航按钮的宽度。
 
 # define gui.navigation_button_width = 250
+
+define gui.navigation_button_text_size = 42
 
 
 ## 选项按钮 ########################################################################
@@ -244,7 +248,7 @@ define gui.notify_ypos = 68
 define gui.choice_spacing = 33
 
 ## 标题菜单和游戏菜单的导航部分中的按钮。
-define gui.navigation_spacing = 6
+define gui.navigation_spacing = 12
 
 ## 控制设置项目之间的间隔量。
 define gui.pref_spacing = 15

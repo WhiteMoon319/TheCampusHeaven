@@ -6,7 +6,6 @@
 # ========================================
 
 define boy = Character("小男孩")
-image boy_block = Solid("#f39c12", xsize=200, ysize=350)
 
 
 # ========================================
@@ -66,7 +65,8 @@ define zhuang = Character("庄桂清")
 default love_zhuang = 0
 default score_zhuang = 0
 default trust_zhuang = 0
-image zhuang_block = Solid("#50c878", xsize=250, ysize=450)
+image zhuang young = Transform("images/char/zhuang/zhuang_young.png", zoom=0.5)
+image zhuang common = Transform("images/char/zhuang/zhuang_common.png", zoom=0.5)
 
 
 # ========================================
@@ -74,7 +74,6 @@ image zhuang_block = Solid("#50c878", xsize=250, ysize=450)
 # ========================================
 
 default player_name = ""
-image player_block = Solid("#4a90d9", xsize=250, ysize=450)
 
 
 # ========================================

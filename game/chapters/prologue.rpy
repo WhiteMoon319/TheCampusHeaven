@@ -15,15 +15,20 @@ label start:
     narrator "你看见三个人围了上来，对着你拳打脚踢，又说又笑。"
     narrator "你躺在角落里瑟瑟发抖，不断抽泣着。"
     "此时，一个看着比你大了很多的小男孩突然闯了进来，他举着手机，高声大呼"
-    show boy_block at left with moveinleft
+    show zhuang young at left with moveinleft
     boy "我...我已经告诉老师了！...你们等着处分吧！"
     narrator "虽然他的语气中带着一些颤抖，但你却看见了他眼中的那抹光。"
     "那几个高年级学生站起来互相对视了一眼"
     student_b "小兔崽子，别让我逮到你。"
     hide student_block
     narrator "为首的那个，带着其他两个人离开了厕所。"
-    show boy_block at center with move
+    show zhuang young at center with move
     "你看见那个小男孩朝你走来，蹲下身，向你伸出手。"
+    $ unlock_cg("zhuang_reach")
+    scene cg zhuang_reach with Dissolve(2.0)
+    window hide
+    pause
+    window auto
     zhuang "你好啊，我叫庄桂清..."
     scene black
     window hide
