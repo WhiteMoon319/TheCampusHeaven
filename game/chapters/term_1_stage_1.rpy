@@ -14,7 +14,6 @@ label before_konw:
     centered "{size=+20}高二下期...{/size}"
     window auto
     scene bg classroom with dissolve
-    show player_block at left
     "你远远守候了他一年，"
     "始终不敢靠近。"
     "但是现在呢？[player_name]？"
@@ -29,8 +28,7 @@ label before_konw:
 
 label t1_1:
     scene bg classroom with dissolve
-    show player_block at left
-    show zhuang_block at right with dissolve
+    show zhuang common at right with dissolve
     "你暗自下定决心，在心中为自己鼓气，迈出了第一步。"
     "你走到了庄桂清面前。"
     zhuang "[player_name]，你...你找我有什么事吗？"
@@ -44,6 +42,7 @@ label t1_1:
             jump t1_1_b
         "老徐让我来帮你补补功课。":
             jump t1_1_c
+
 label t1_1_a:
     $ love_zhuang += 1
     player_name "没事，就是看见你在写东西，有点好奇。"
@@ -54,6 +53,7 @@ label t1_1_a:
     zhuang "嗯..."
     zhuang "这个生物题可以吗？"
     jump t1_2
+
 label t1_1_b:
     player_name "就是听说你和陈叙塬闹矛盾了？"
     player_name "你们怎么回事啊？不是玩得那么好？"
@@ -63,6 +63,7 @@ label t1_1_b:
     zhuang "嗯..."
     zhuang "这个生物题可以吗？"
     jump t1_2
+
 label t1_1_c:
     $ trust_zhuang += 2
     player_name "老徐让我帮你补补功课。"
@@ -71,14 +72,73 @@ label t1_1_c:
     zhuang "嗯...生物的遗传题可以吗？"
     "生物吗？当然可以呀。"
     jump t1_2
+
 label t1_2:
+    "你看见庄桂清翻出了生物练习册，一页一页地翻，然后指着一道题满怀期待地看着你。"
+    zhuang "就这个吧。"
+    zhuang "麻烦你了..."
+    "你拿起练习册，开始仔细端详眼前的题目"
+    menu:
+        "认真回答问题。":
+            jump t1_2_a
+        "佯装自己不会。":
+            jump t1_2_b
+        "故作高深地乱讲一通。":
+            jump t1_2_c
+label t1_2_a:
+    $ trust_zhuang += 5
+    "你仔细地为庄桂清讲解了眼前的题目。"
+    "或许过了几分钟，也或许过了很久。但你听到庄桂清久无动静。"
+    "你抬起头，对上了他的双眼。"
+    player_name "嗯..."
+    player_name "庄桂清？你...听懂了吗？"
+    "他好像刚刚回过神来，向你点了点头。"
+    zhuang "听...听懂了！谢谢你...[player_name]..."
+    "你笑了笑，看出了他眼神中的一些慌乱。"
+    player_name "其实..."
+    player_name "我觉得我没讲明白...我们再来一遍？"
+    "庄桂清用力点了点头。"
+    zhuang "嗯！"
+    jump t1_3
+label t1_2_b:
+    "你对上了庄桂清期待的眼睛，心中起了一丝逗弄的想法。"
+    player_name "（要不要逗逗他呢？）"
+    "你心想。"
+    player_name "庄桂清...你真是挑了个好题啊..."
+    zhuang "啊....啊？怎么了？"
+    "你故作高深，向他挥了挥手。"
+    "庄桂清俯下身，把脸凑到了练习册前。"
+    player_name "其实...其实我不会..."
+    zhuang "啊？那...那我换一道？"
+    "你看见庄桂清慌乱的表情，噗嗤一声笑了出来。"
+    "庄桂清听见你的笑声，猛地抬头，脸上泛起了红晕。"
+    player_name "好啦好啦，我认真给你讲吧。"
+    jump t1_3
+label t1_2_c:
+    $ love_zhuang += 4
+    "你对上了庄桂清期待的眼睛，心中起了一丝逗弄的想法。"
+    player_name "（要不要逗逗他呢？）"
+    "你心想。"
+    player_name "这道题...怎么说呢..."
+    player_name "你先这样，这是一道遗传题吗，那你先想想遗传和什么有关。"
+    zhuang "孟德尔？还是？"
+    player_name "错！其实是和豌豆射手有关！"
+    player_name "你想，孟德尔是怎么得出9331的？"
+    zhuang "豌豆杂交与自交？"
+    player_name "对咯，所以孟德尔是豌豆射手啊！"
+    zhuang "不是..."
+    zhuang "这不对吧？"
+    player_name "难道不好笑吗？"
+    zhuang "呃...好笑吧？"
+    player_name "哎...算了算了，我好好给你讲吧。"
+    jump t1_3
+label t1_3:
     window auto
     narrator "To be continued..."
     return
 
 label bad_end_1:
     scene bg school with dissolve
-    show player_block at left
     narrator "你再一次低下了头，装作什么都没看见。"
     "庄桂清和陈叙塬的冷战还在继续，"
     "而你，依然远远地看着。"
@@ -93,7 +153,6 @@ label bad_end_1:
 
 label lu_mingyuan_route:
     scene bg classroom with dissolve
-    show player_block at left
     show lu_block at right with dissolve
     narrator "你收回了望向庄桂清的视线。"
     scene black
