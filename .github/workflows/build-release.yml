@@ -74,8 +74,8 @@ jobs:
           fi
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD || 'Zhang0319.' }}
-
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+ 
       - name: Build Release APK
         run: |
           export ANDROID_HOME=$ANDROID_SDK_ROOT
@@ -92,9 +92,9 @@ jobs:
             --ks-alias "$KS_ALIAS" \
             --key-pass "$KEY_PASS"
         env:
-          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD || 'Zhang0319.' }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
           KS_ALIAS: ${{ secrets.KEY_ALIAS || 'release' }}
-          KEY_PASS: ${{ secrets.KEY_PASSWORD || 'Zhang0319.' }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
 
       - name: Find APK
         id: apk
