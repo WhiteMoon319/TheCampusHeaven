@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-dev:
+  build-android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -86,4 +86,63 @@ jobs:
         with:
           name: dev-apk
           path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: warn
+
+  build-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Cache Ren'Py SDK
+        id: cache-sdk
+        uses: actions/cache@v4
+        with:
+          path: renpy-sdk
+          key: renpy-sdk-${{ runner.os }}-8.3.4
+
+      - name: Download Ren'Py SDK
+        if: steps.cache-sdk.outputs.cache-hit != 'true'
+        run: |
+          curl -L --fail -o renpy-sdk.tar.bz2 https://www.renpy.org/dl/8.3.4/renpy-8.3.4-sdk.tar.bz2
+          mkdir -p renpy-sdk
+          tar -xjf renpy-sdk.tar.bz2 -C renpy-sdk --strip-components=1
+          rm renpy-sdk.tar.bz2
+
+      - name: Set dev version
+        run: |
+          VERSION=$(git describe --tags --always | sed 's/^v//')
+          sed -i "s/define config.version = .*/define config.version = \"${VERSION}\"/" game/system/options.rpy
+          grep "config.version" game/system/options.rpy
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Compile game scripts
+        working-directory: renpy-sdk
+        run: |
+          lib/py3-linux-x86_64/python renpy.py ${{ github.workspace }} compile
+
+      - name: Build Windows distribution
+        working-directory: renpy-sdk
+        run: |
+          lib/py3-linux-x86_64/python renpy.py . distribute --package pc ${{ github.workspace }}
+
+      - name: Prepare artifact
+        id: dist
+        run: |
+          ZIP_PATH=$(find ${{ github.workspace }} ${{ github.workspace }}/.. -maxdepth 4 -name "*-pc.zip" -type f 2>/dev/null | head -1)
+          ZIP_NAME="TheCampusHeaven-${VERSION}-pc.zip"
+          cp "$ZIP_PATH" "./$ZIP_NAME"
+          echo "Artifact: $ZIP_NAME"
+          unzip -q "./$ZIP_NAME" -d ./artifact
+          GAME_DIR=$(find ./artifact -mindepth 1 -maxdepth 1 -type d | head -1)
+          echo "path=$GAME_DIR" >> $GITHUB_OUTPUT
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-windows
+          path: ${{ steps.dist.outputs.path }}
           if-no-files-found: warn

@@ -171,6 +171,12 @@ init python:
     build.classify('**/thumbs.db', None)
     build.classify('README.md', None)
     build.classify('cliff.toml', None)
+    build.classify('scripts/**', None)
+    build.classify('.github/**', None)
+    build.classify('.vscode/**', None)
+    build.classify('**.yml', None)
+    build.classify('**.yaml', None)
+    build.classify('**.py', None)
 
     ## 若要封装文件，需将其列为“archive”。
 

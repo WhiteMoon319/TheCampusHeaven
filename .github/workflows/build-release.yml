@@ -10,10 +10,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-release:
+  build-android:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,7 +74,7 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
- 
+
       - name: Build Release APK
         run: |
           export ANDROID_HOME=$ANDROID_SDK_ROOT
@@ -114,12 +112,106 @@ jobs:
           path: ${{ steps.apk.outputs.path }}
           if-no-files-found: error
 
+  build-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Cache Ren'Py SDK
+        id: cache-sdk
+        uses: actions/cache@v4
+        with:
+          path: renpy-sdk
+          key: renpy-sdk-${{ runner.os }}-8.3.4
+
+      - name: Download Ren'Py SDK
+        if: steps.cache-sdk.outputs.cache-hit != 'true'
+        run: |
+          curl -L --fail -o renpy-sdk.tar.bz2 https://www.renpy.org/dl/8.3.4/renpy-8.3.4-sdk.tar.bz2
+          mkdir -p renpy-sdk
+          tar -xjf renpy-sdk.tar.bz2 -C renpy-sdk --strip-components=1
+          rm renpy-sdk.tar.bz2
+
+      - name: Set version from tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+          else
+            VERSION="1.0.0"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Building version $VERSION"
+
+      - name: Inject version into game
+        run: |
+          sed -i "s/define config.version = .*/define config.version = \"${VERSION}\"/" game/system/options.rpy
+          grep "config.version" game/system/options.rpy
+
+      - name: Compile game scripts
+        working-directory: renpy-sdk
+        run: |
+          lib/py3-linux-x86_64/python renpy.py ${{ github.workspace }} compile
+
+      - name: Build Windows distribution
+        working-directory: renpy-sdk
+        run: |
+          lib/py3-linux-x86_64/python renpy.py . distribute --package pc ${{ github.workspace }}
+
+      - name: Find Windows ZIP
+        id: dist
+        run: |
+          ZIP_PATH=$(find ${{ github.workspace }} ${{ github.workspace }}/.. -maxdepth 4 -name "*-pc.zip" -type f 2>/dev/null | head -1)
+          echo "Found ZIP: $ZIP_PATH"
+          ZIP_NAME="TheCampusHeaven-${VERSION}-pc.zip"
+          cp "$ZIP_PATH" "$ZIP_NAME"
+          echo "path=$ZIP_NAME" >> $GITHUB_OUTPUT
+          echo "name=$ZIP_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload Windows ZIP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: ${{ steps.dist.outputs.path }}
+          if-no-files-found: error
+
+  release:
+    needs: [build-android, build-windows]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set version from tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: release-apk
+
+      - name: Download Windows ZIP
+        uses: actions/download-artifact@v4
+        with:
+          name: release-windows
+
       - name: Install git-cliff
-        if: startsWith(github.ref, 'refs/tags/')
         uses: kenji-miyake/setup-git-cliff@v2
 
       - name: Generate Changelog
-        if: startsWith(github.ref, 'refs/tags/')
         run: |
           git-cliff --current --strip header -o CHANGELOG.md || true
           if [ ! -s CHANGELOG.md ]; then
@@ -134,10 +226,11 @@ jobs:
           fi
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.apk.outputs.path }}
+          files: |
+            TheCampusHeaven-*.apk
+            TheCampusHeaven-*-pc.zip
           body_path: CHANGELOG.md
           name: "v${{ env.VERSION }}"
           tag_name: ${{ github.ref_name }}
